@@ -26,14 +26,18 @@ Server runs at `http://localhost:8000`. Swagger docs at `/docs`.
 
 The simplest way to use blog2kindle. Pass a URL, get back ebook files.
 
-```json
-{
-  "url": "https://example.com/blog-post",
-  "sanitize": false,
-  "formats": ["epub", "azw3"],
-  "send_to_kindle": false,
-  "kindle_path": "books/fiction/blogs"
-}
+```bash
+curl -X POST http://localhost:8000/api/pipeline \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/post", "sanitize": false}'
+```
+
+With LLM cleanup and extra formats:
+
+```bash
+curl -X POST http://localhost:8000/api/pipeline \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/post", "formats": ["epub", "azw3", "pdf"]}'
 ```
 
 Response includes `files` (filename per format), `download_urls` (paths to fetch the files), `metadata`, and `cover_url`.
@@ -42,58 +46,87 @@ Response includes `files` (filename per format), `download_urls` (paths to fetch
 
 Same as pipeline but for a list. Runs up to 4 URLs concurrently. Each URL succeeds or fails independently.
 
-```json
-{
-  "urls": ["https://example.com/post-1", "https://example.com/post-2"],
-  "sanitize": false,
-  "formats": ["epub"]
-}
+```bash
+curl -X POST http://localhost:8000/api/batch \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": [
+      "https://example.com/post-1",
+      "https://example.com/post-2",
+      "https://example.com/post-3"
+    ],
+    "sanitize": false,
+    "formats": ["epub", "azw3"]
+  }'
 ```
 
 ### `/api/fetch` (POST) -- extract only
 
 Returns raw markdown, metadata (title, author, source, OG image URL), and downloaded image paths. No conversion.
 
-```json
-{"url": "https://example.com/post"}
+```bash
+curl -X POST http://localhost:8000/api/fetch \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/post"}'
 ```
 
 ### `/api/sanitize` (POST) -- LLM cleanup only
 
 Takes raw markdown, returns cleaned markdown. Requires `GEMINI_API_KEY` or `OPENROUTER_API_KEY` in the environment.
 
-```json
-{"markdown": "raw markdown text here"}
+```bash
+curl -X POST http://localhost:8000/api/sanitize \
+  -H "Content-Type: application/json" \
+  -d '{"markdown": "raw markdown text here"}'
 ```
 
 ### `/api/convert` (POST) -- convert only
 
 Takes markdown + metadata, returns ebook files.
 
-```json
-{
-  "title": "My Post",
-  "markdown": "# Hello\n\nContent here.",
-  "author": "Author Name",
-  "formats": ["epub", "azw3", "pdf", "mobi"]
-}
+```bash
+curl -X POST http://localhost:8000/api/convert \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Post", "markdown": "# Hello\n\nContent here.", "author": "Author Name", "formats": ["epub", "azw3", "pdf", "mobi"]}'
 ```
 
 ### `/api/send-to-kindle` (POST) -- transfer a file
 
 Copies a generated file to the Kindle. Kindle must be USB-connected.
 
-```json
-{"file": "my-post.azw3", "kindle_path": "books/fiction/blogs"}
+```bash
+curl -X POST http://localhost:8000/api/send-to-kindle \
+  -H "Content-Type: application/json" \
+  -d '{"file": "my-post.azw3", "kindle_path": "books/fiction/blogs"}'
 ```
 
 ### `/api/kindle/status` (GET) -- check connection
 
 Returns `connected` (bool), `path` (mount point), `books_dir` (target folder).
 
+```bash
+curl http://localhost:8000/api/kindle/status
+```
+
+### `/api/kindle/books` (GET) -- list books on Kindle
+
+```bash
+curl http://localhost:8000/api/kindle/books
+```
+
 ### `/api/formats` (GET) -- list supported formats
 
+```bash
+curl http://localhost:8000/api/formats
+```
+
 Returns `["azw3", "epub", "mobi", "pdf"]`.
+
+### Download a generated file
+
+```bash
+curl -O http://localhost:8000/static/epubs/my-post.epub
+```
 
 ## Parameters reference
 
