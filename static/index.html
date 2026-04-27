@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>blog2kindle</title>
+<style>
+@font-face {
+  font-family: 'ZedMono';
+  src: url('/static/ZedMonoNerdFont-Regular.ttf') format('truetype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'ZedMono';
+  src: url('/static/ZedMonoNerdFont-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+:root {
+  --bg: #1e1e2e;
+  --surface: #181825;
+  --surface-hover: #1e1e30;
+  --text: #cdd6f4;
+  --text-muted: #a6adc8;
+  --primary: #cba6f7;
+  --secondary: #fab387;
+  --accent: #f9e2af;
+  --link: #89b4fa;
+  --link-hover: #74c7ec;
+  --border: #313244;
+  --cyan: #94e2d5;
+  --red: #f38ba8;
+  --green: #a6e3a1;
+  --gold: #f9e2af;
+  --code-bg: rgba(137,180,250,0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'ZedMono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.625;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+}
+
+/* header */
+header {
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.header-left h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
+
+.header-left p {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.kindle-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-top: 0.35rem;
+  flex-shrink: 0;
+}
+
+.kindle-status .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  transition: background 0.3s;
+}
+
+.kindle-status.connected .dot {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+/* input */
+.input-section {
+  margin-bottom: 1.5rem;
+}
+
+.url-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--text);
+  font-family: 'ZedMono', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.url-input:focus {
+  border-color: var(--primary);
+}
+
+.url-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* buttons */
+.btn {
+  padding: 0.65rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--primary);
+  font-family: 'ZedMono', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.btn:hover {
+  border-color: var(--primary);
+  background: rgba(203,166,247,0.06);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--bg);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+}
+
+.btn-send {
+  background: var(--green);
+  color: var(--bg);
+  border-color: var(--green);
+}
+
+.btn-send:hover {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.btn-sm {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.75rem;
+}
+
+/* cards */
+.card {
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 1rem;
+}
+
+.card-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  opacity: 0.8;
+  margin-bottom: 0.6rem;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
+}
+
+.card-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-meta .sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--cyan);
+}
+
+/* preview */
+.preview-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.preview-toggle .arrow {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.preview-toggle.open .arrow {
+  transform: rotate(90deg);
+}
+
+.preview-area {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.8;
+}
+
+.preview-area::-webkit-scrollbar { width: 5px; }
+.preview-area::-webkit-scrollbar-track { background: transparent; }
+.preview-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.preview-area h1, .preview-area h2, .preview-area h3, .preview-area h4 {
+  color: var(--primary);
+  margin: 1rem 0 0.4rem;
+}
+.preview-area h1 { font-size: 1.2rem; }
+.preview-area h2 { font-size: 1.05rem; }
+.preview-area h3 { font-size: 0.95rem; }
+
+.preview-area p { margin-bottom: 0.6rem; }
+
+.preview-area img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  margin: 0.4rem 0;
+}
+
+.preview-area pre {
+  background: var(--code-bg);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.6rem 0;
+  font-size: 0.78rem;
+}
+
+.preview-area code {
+  background: var(--code-bg);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+  font-size: 0.85em;
+}
+
+.preview-area pre code { background: none; padding: 0; }
+
+.preview-area blockquote {
+  border-left: 2px solid var(--primary);
+  padding-left: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0.6rem 0;
+}
+
+.preview-area a { color: var(--link); }
+
+.preview-area ul, .preview-area ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.preview-area li { margin-bottom: 0.2rem; }
+
+.preview-area strong { color: var(--link-hover); }
+
+/* cover + actions combined card */
+.bottom-row {
+  display: flex;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.cover-card {
+  width: 180px;
+  flex-shrink: 0;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.cover-card .card-label { margin-bottom: 0; }
+
+.cover-img-wrap {
+  border-radius: 0.4rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  aspect-ratio: 1072/1448;
+}
+
+.cover-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-btns {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.cover-btns .btn { flex: 1; font-size: 0.7rem; padding: 0.4rem 0.5rem; }
+
+.file-upload {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.file-upload .btn { width: 100%; }
+
+.file-upload input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* actions card */
+.actions-card {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.actions-card .card-label { margin-bottom: 0.5rem; }
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.step:last-child { border-bottom: none; }
+
+.step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.step-num.done {
+  background: var(--green);
+  color: var(--bg);
+  border-color: var(--green);
+}
+
+.step-num.active {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.step-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.step-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.step-label.done { color: var(--green); }
+.step-label.active { color: var(--text); }
+
+.step .btn { flex-shrink: 0; }
+
+/* success banner */
+.success-banner {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--green);
+  background: rgba(166,227,161,0.06);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+}
+
+.success-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.success-text { color: var(--green); font-weight: 700; }
+.success-detail { color: var(--text-muted); font-size: 0.75rem; margin-top: 0.15rem; }
+
+/* toast */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.75rem;
+  font-family: 'ZedMono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--green);
+  opacity: 0;
+  transition: all 0.25s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.error { color: var(--red); }
+
+/* spinner */
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hidden { display: none !important; }
+
+@media (max-width: 640px) {
+  .url-row { flex-direction: column; }
+  .bottom-row { flex-direction: column; }
+  .cover-card { width: 100%; }
+  header { flex-direction: column; gap: 0.75rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="header-left">
+      <h1>blog2kindle</h1>
+      <p>fetch blogs. make epubs. read on kindle.</p>
+    </div>
+    <div class="kindle-status" id="kindle-status">
+      <span class="dot"></span>
+      <span id="kindle-label">checking...</span>
+    </div>
+  </header>
+
+  <!-- url input -->
+  <div class="input-section">
+    <div class="url-row">
+      <input
+        type="url"
+        class="url-input"
+        id="url-input"
+        placeholder="paste a blog url..."
+        spellcheck="false"
+      />
+      <button class="btn btn-primary" id="fetch-btn" onclick="fetchBlog()">fetch</button>
+    </div>
+  </div>
+
+  <!-- metadata card -->
+  <div class="card hidden" id="meta-card">
+    <div class="card-label">fetched</div>
+    <div class="card-title" id="meta-title"></div>
+    <div class="card-meta">
+      <span id="meta-author"></span>
+      <span class="sep"></span>
+      <span id="meta-source"></span>
+    </div>
+  </div>
+
+  <!-- preview card (collapsible) -->
+  <div class="card hidden" id="preview-card">
+    <div class="preview-toggle open" id="preview-toggle" onclick="togglePreview()">
+      <span class="card-label" style="margin-bottom:0">preview</span>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <button class="btn btn-sm" id="clean-btn" onclick="event.stopPropagation(); cleanWithLLM()" style="font-size:0.65rem;padding:0.3rem 0.7rem;color:var(--secondary);border-color:var(--secondary)">clean with llm</button>
+        <span class="arrow">&#9654;</span>
+      </div>
+    </div>
+    <div id="preview-wrap">
+      <div class="preview-area" id="preview-area"></div>
+    </div>
+  </div>
+
+  <!-- cover + actions -->
+  <div class="bottom-row hidden" id="bottom-row">
+    <div class="cover-card">
+      <div class="card-label">cover</div>
+      <div class="cover-img-wrap">
+        <img id="cover-img" src="" alt="cover"/>
+      </div>
+      <div class="cover-btns">
+        <button class="btn btn-sm" onclick="regenerateCover()">regen</button>
+        <div class="file-upload">
+          <button class="btn btn-sm">upload</button>
+          <input type="file" accept="image/*" onchange="uploadCover(this)"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions-card">
+      <div>
+        <div class="card-label">pipeline</div>
+        <div class="step" id="step-1">
+          <div class="step-num done">1</div>
+          <div class="step-content">
+            <span class="step-label done">fetched</span>
+          </div>
+        </div>
+        <div class="step" id="step-2">
+          <div class="step-num active">2</div>
+          <div class="step-content">
+            <span class="step-label active">convert to epub</span>
+            <button class="btn btn-sm btn-primary" id="convert-btn" onclick="convertEpub()">convert</button>
+          </div>
+        </div>
+        <div class="step" id="step-3">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <span class="step-label">send to kindle</span>
+            <button class="btn btn-sm btn-send" id="send-btn" onclick="sendToKindle()" disabled>send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- success -->
+  <div class="success-banner hidden" id="success-banner">
+    <span class="success-icon">&#10003;</span>
+    <div>
+      <div class="success-text" id="success-text">sent to kindle</div>
+      <div class="success-detail" id="success-detail"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let state = { metadata: null, markdown: '', cover: null, epub: null, azw3: null };
+
+async function checkKindle() {
+  try {
+    const r = await fetch(API + '/api/kindle/status');
+    const d = await r.json();
+    const el = document.getElementById('kindle-status');
+    const label = document.getElementById('kindle-label');
+    if (d.connected) {
+      el.classList.add('connected');
+      label.textContent = 'kindle connected';
+    } else {
+      el.classList.remove('connected');
+      label.textContent = 'no kindle';
+    }
+    return d.connected;
+  } catch { return false; }
+}
+
+async function fetchBlog() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) return;
+
+  const btn = document.getElementById('fetch-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>fetching';
+
+  // reset state
+  hide('meta-card'); hide('preview-card'); hide('bottom-row'); hide('success-banner');
+  resetSteps();
+  const cb = document.getElementById('clean-btn');
+  cb.textContent = 'clean with llm'; cb.disabled = false;
+  cb.style.color = 'var(--secondary)'; cb.style.borderColor = 'var(--secondary)';
+
+  try {
+    const r = await fetch(API + '/api/fetch', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    state.metadata = d.metadata;
+    state.markdown = d.markdown;
+    state.epub = null;
+    state.azw3 = null;
+
+    document.getElementById('meta-title').textContent = d.metadata.title;
+    document.getElementById('meta-author').textContent = d.metadata.author || 'Unknown author';
+    document.getElementById('meta-source').textContent = d.metadata.source;
+    show('meta-card');
+
+    document.getElementById('preview-area').innerHTML = renderMarkdown(d.markdown);
+    show('preview-card');
+
+    await generateCover();
+    show('bottom-row');
+    toast('blog fetched');
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'fetch';
+  }
+}
+
+async function generateCover() {
+  const m = state.metadata;
+  if (!m) return;
+  const r = await fetch(API + '/api/cover/generate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({title: m.title, author: m.author, source: m.source, image_url: m.cover_url})
+  });
+  const d = await r.json();
+  state.cover = d.cover;
+  document.getElementById('cover-img').src = d.preview_url + '?t=' + Date.now();
+}
+
+async function regenerateCover() {
+  await generateCover();
+  toast('cover regenerated');
+}
+
+async function uploadCover(input) {
+  if (!input.files.length) return;
+  const form = new FormData();
+  form.append('file', input.files[0]);
+  const r = await fetch(API + '/api/cover/upload', {method: 'POST', body: form});
+  const d = await r.json();
+  if (d.error) { toast(d.error, true); return; }
+  state.cover = d.cover;
+  document.getElementById('cover-img').src = d.preview_url + '?t=' + Date.now();
+  toast('custom cover set');
+}
+
+async function cleanWithLLM() {
+  if (!state.markdown) return;
+  const btn = document.getElementById('clean-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:var(--secondary)"></span> cleaning';
+
+  try {
+    const r = await fetch(API + '/api/sanitize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({markdown: state.markdown})
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    state.markdown = d.markdown;
+    document.getElementById('preview-area').innerHTML = renderMarkdown(d.markdown);
+    btn.textContent = 'cleaned';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    toast('cleaned with llm');
+  } catch (e) {
+    toast(e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'clean with llm';
+  }
+}
+
+async function convertEpub() {
+  const btn = document.getElementById('convert-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const r = await fetch(API + '/api/convert', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        title: state.metadata.title,
+        markdown: state.markdown,
+        author: state.metadata.author,
+        source: state.metadata.source,
+        cover: state.cover,
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    state.epub = d.epub;
+    state.azw3 = d.azw3;
+
+    // mark step 2 done, activate step 3
+    markStep(2, 'done');
+    markStep(3, 'active');
+    const connected = await checkKindle();
+    document.getElementById('send-btn').disabled = !connected;
+
+    btn.textContent = 'done';
+    btn.disabled = true;
+    toast('epub + azw3 ready');
+  } catch (e) {
+    toast(e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'convert';
+  }
+}
+
+async function sendToKindle() {
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const r = await fetch(API + '/api/send-to-kindle', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({file: state.azw3})
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+
+    markStep(3, 'done');
+    btn.textContent = 'sent';
+
+    document.getElementById('success-text').textContent = 'sent to kindle';
+    document.getElementById('success-detail').textContent = state.azw3;
+    show('success-banner');
+
+    toast('on your kindle now');
+  } catch (e) {
+    toast(e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'send';
+  }
+}
+
+function markStep(n, status) {
+  const step = document.getElementById('step-' + n);
+  const num = step.querySelector('.step-num');
+  const label = step.querySelector('.step-label');
+  const btn = step.querySelector('.btn');
+  num.className = 'step-num ' + status;
+  label.className = 'step-label ' + status;
+  if (status === 'done') {
+    num.textContent = '✓';
+  }
+}
+
+function resetSteps() {
+  [1,2,3].forEach(n => {
+    const step = document.getElementById('step-' + n);
+    if (!step) return;
+    const num = step.querySelector('.step-num');
+    const label = step.querySelector('.step-label');
+    num.className = 'step-num' + (n === 1 ? ' done' : n === 2 ? ' active' : '');
+    num.textContent = n === 1 ? '✓' : n;
+    label.className = 'step-label' + (n === 1 ? ' done' : n === 2 ? ' active' : '');
+  });
+  const cb = document.getElementById('convert-btn');
+  cb.textContent = 'convert'; cb.disabled = false;
+  const sb = document.getElementById('send-btn');
+  sb.textContent = 'send'; sb.disabled = true;
+}
+
+function togglePreview() {
+  const wrap = document.getElementById('preview-wrap');
+  const toggle = document.getElementById('preview-toggle');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = '';
+    toggle.classList.add('open');
+  } else {
+    wrap.style.display = 'none';
+    toggle.classList.remove('open');
+  }
+}
+
+function renderMarkdown(text) {
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  html = html.replace(/```[\w]*\n([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="/static/$2" alt="$1"/>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/^(?!<[hpuolibcs]|<\/|<pre|<img|<a )(.+)$/gm, '<p>$1</p>');
+  html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  html = html.replace(/<\/ul>\s*<ul>/g, '');
+
+  return html;
+}
+
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => el.className = 'toast', 2500);
+}
+
+document.getElementById('url-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fetchBlog();
+});
+
+checkKindle();
+setInterval(checkKindle, 10000);
+</script>
+</body>
+</html>
