@@ -5,3 +5,4 @@ __pycache__/
 static/images/
 static/covers/
 static/epubs/
+data/

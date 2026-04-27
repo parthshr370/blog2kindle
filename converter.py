@@ -9,6 +9,15 @@ EPUBS_DIR = os.path.join(os.path.dirname(__file__), "static", "epubs")
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), "static", "images")
 COVERS_DIR = os.path.join(os.path.dirname(__file__), "static", "covers")
 
+VALID_FORMATS = {"epub", "azw3", "pdf", "mobi"}
+
+FORMAT_EXTRA_ARGS = {
+    "epub": ["--no-default-epub-cover", "--epub-inline-toc"],
+    "azw3": [],
+    "pdf": [],
+    "mobi": [],
+}
+
 
 def _build_html(title, markdown_content, author=None, source=None):
     html_body = _markdown_to_html(markdown_content)
@@ -61,14 +70,15 @@ def _run_ebook_convert(cmd):
         raise RuntimeError(f"ebook-convert failed: {result.stderr}")
 
 
-def convert_to_epub(title, markdown_content, author=None, source=None, cover_filename=None):
-    os.makedirs(EPUBS_DIR, exist_ok=True)
+def convert_ebook(title, markdown_content, author=None, source=None, cover_filename=None, formats=None):
+    if formats is None:
+        formats = ["epub", "azw3"]
+    formats = [f for f in formats if f in VALID_FORMATS]
+    if not formats:
+        formats = ["epub", "azw3"]
 
+    os.makedirs(EPUBS_DIR, exist_ok=True)
     slug = _slugify(title)
-    epub_filename = f"{slug}.epub"
-    azw3_filename = f"{slug}.azw3"
-    epub_path = os.path.join(EPUBS_DIR, epub_filename)
-    azw3_path = os.path.join(EPUBS_DIR, azw3_filename)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         html_content = _build_html(title, markdown_content, author, source)
@@ -96,17 +106,12 @@ def convert_to_epub(title, markdown_content, author=None, source=None, cover_fil
             if os.path.exists(cover_path):
                 base_args.extend(["--cover", cover_path])
 
-        # generate EPUB
-        cmd_epub = [
-            "ebook-convert", html_path, epub_path,
-            "--no-default-epub-cover", "--epub-inline-toc",
-        ] + base_args
-        _run_ebook_convert(cmd_epub)
+        result = {}
+        for fmt in formats:
+            out_filename = f"{slug}.{fmt}"
+            out_path = os.path.join(EPUBS_DIR, out_filename)
+            cmd = ["ebook-convert", html_path, out_path] + FORMAT_EXTRA_ARGS.get(fmt, []) + base_args
+            _run_ebook_convert(cmd)
+            result[fmt] = out_filename
 
-        # generate AZW3 (native Kindle format)
-        cmd_azw3 = [
-            "ebook-convert", html_path, azw3_path,
-        ] + base_args
-        _run_ebook_convert(cmd_azw3)
-
-    return {"epub": epub_filename, "azw3": azw3_filename}
+    return result

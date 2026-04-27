@@ -135,6 +135,117 @@ header {
   opacity: 0.5;
 }
 
+/* options row */
+.options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* toggle switch */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.toggle input { display: none; }
+
+.toggle-slider {
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--border);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: var(--primary);
+}
+
+.toggle input:checked + .toggle-slider::after {
+  transform: translateX(16px);
+  background: var(--bg);
+}
+
+/* format picks */
+.format-picks {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.72rem;
+}
+
+.format-picks .format-label {
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.format-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.format-pick:hover { color: var(--text); }
+
+.format-pick input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.format-pick input:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.format-pick input:checked::after {
+  content: '';
+  position: absolute;
+  left: 3.5px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--bg);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 /* buttons */
 .btn {
   padding: 0.65rem 1.1rem;
@@ -446,6 +557,47 @@ header {
 
 .step .btn { flex-shrink: 0; }
 
+/* downloads card */
+.downloads-card {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.download-links {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.dl-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--link);
+  font-family: 'ZedMono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.2s;
+}
+
+.dl-btn:hover {
+  border-color: var(--link);
+  background: rgba(137,180,250,0.08);
+}
+
+.dl-btn .dl-icon {
+  font-size: 0.85rem;
+}
+
 /* success banner */
 .success-banner {
   margin-top: 1rem;
@@ -508,10 +660,50 @@ header {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* kindle path setting */
+.kindle-path-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.kindle-path-row .path-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.kindle-path-input {
+  flex: 1;
+  padding: 0.4rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text);
+  font-family: 'ZedMono', monospace;
+  font-size: 0.72rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.kindle-path-input:focus {
+  border-color: var(--primary);
+}
+
+.kindle-path-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
 .hidden { display: none !important; }
 
 @media (max-width: 640px) {
   .url-row { flex-direction: column; }
+  .options-row { flex-direction: column; align-items: flex-start; }
   .bottom-row { flex-direction: column; }
   .cover-card { width: 100%; }
   header { flex-direction: column; gap: 0.75rem; }
@@ -524,7 +716,7 @@ header {
   <header>
     <div class="header-left">
       <h1>blog2kindle</h1>
-      <p>fetch blogs. make epubs. read on kindle.</p>
+      <p>fetch blogs. make ebooks. read on kindle.</p>
     </div>
     <div class="kindle-status" id="kindle-status">
       <span class="dot"></span>
@@ -543,6 +735,32 @@ header {
         spellcheck="false"
       />
       <button class="btn btn-primary" id="fetch-btn" onclick="fetchBlog()">fetch</button>
+    </div>
+
+    <!-- options: skip-llm toggle + format picks -->
+    <div class="options-row">
+      <label class="toggle" title="Skip LLM cleanup and use raw extracted content">
+        <input type="checkbox" id="skip-llm"/>
+        <span class="toggle-slider"></span>
+        <span>skip llm cleanup</span>
+      </label>
+      <div class="format-picks">
+        <span class="format-label">formats:</span>
+        <label class="format-pick"><input type="checkbox" value="epub" checked/> epub</label>
+        <label class="format-pick"><input type="checkbox" value="azw3" checked/> azw3</label>
+        <label class="format-pick"><input type="checkbox" value="pdf"/> pdf</label>
+        <label class="format-pick"><input type="checkbox" value="mobi"/> mobi</label>
+      </div>
+    </div>
+    <div class="kindle-path-row">
+      <span class="path-label">kindle path:</span>
+      <input
+        type="text"
+        class="kindle-path-input"
+        id="kindle-path"
+        placeholder="books/fiction/blogs"
+        spellcheck="false"
+      />
     </div>
   </div>
 
@@ -599,8 +817,8 @@ header {
         <div class="step" id="step-2">
           <div class="step-num active">2</div>
           <div class="step-content">
-            <span class="step-label active">convert to epub</span>
-            <button class="btn btn-sm btn-primary" id="convert-btn" onclick="convertEpub()">convert</button>
+            <span class="step-label active">convert to ebook</span>
+            <button class="btn btn-sm btn-primary" id="convert-btn" onclick="convertEbook()">convert</button>
           </div>
         </div>
         <div class="step" id="step-3">
@@ -612,6 +830,12 @@ header {
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- downloads -->
+  <div class="downloads-card hidden" id="downloads-card">
+    <div class="card-label">downloads</div>
+    <div class="download-links" id="download-links"></div>
   </div>
 
   <!-- success -->
@@ -628,11 +852,33 @@ header {
 
 <script>
 const API = '';
-let state = { metadata: null, markdown: '', cover: null, epub: null, azw3: null };
+let state = { metadata: null, markdown: '', cover: null, files: {} };
+
+// kindle path: load from localStorage, save on change
+const kindlePathInput = document.getElementById('kindle-path');
+const savedPath = localStorage.getItem('kindle_path');
+if (savedPath) kindlePathInput.value = savedPath;
+kindlePathInput.addEventListener('change', () => {
+  localStorage.setItem('kindle_path', kindlePathInput.value.trim());
+});
+
+function getKindlePath() {
+  return kindlePathInput.value.trim() || null;
+}
+
+function getSelectedFormats() {
+  return [...document.querySelectorAll('.format-pick input:checked')].map(c => c.value);
+}
+
+function isSkipLLM() {
+  return document.getElementById('skip-llm').checked;
+}
 
 async function checkKindle() {
   try {
-    const r = await fetch(API + '/api/kindle/status');
+    const kp = getKindlePath();
+    const qs = kp ? '?kindle_path=' + encodeURIComponent(kp) : '';
+    const r = await fetch(API + '/api/kindle/status' + qs);
     const d = await r.json();
     const el = document.getElementById('kindle-status');
     const label = document.getElementById('kindle-label');
@@ -655,12 +901,8 @@ async function fetchBlog() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>fetching';
 
-  // reset state
-  hide('meta-card'); hide('preview-card'); hide('bottom-row'); hide('success-banner');
+  hide('meta-card'); hide('preview-card'); hide('bottom-row'); hide('downloads-card'); hide('success-banner');
   resetSteps();
-  const cb = document.getElementById('clean-btn');
-  cb.textContent = 'clean with llm'; cb.disabled = false;
-  cb.style.color = 'var(--secondary)'; cb.style.borderColor = 'var(--secondary)';
 
   try {
     const r = await fetch(API + '/api/fetch', {
@@ -673,8 +915,7 @@ async function fetchBlog() {
 
     state.metadata = d.metadata;
     state.markdown = d.markdown;
-    state.epub = null;
-    state.azw3 = null;
+    state.files = {};
 
     document.getElementById('meta-title').textContent = d.metadata.title;
     document.getElementById('meta-author').textContent = d.metadata.author || 'Unknown author';
@@ -683,6 +924,7 @@ async function fetchBlog() {
 
     document.getElementById('preview-area').innerHTML = renderMarkdown(d.markdown);
     show('preview-card');
+    updateCleanBtn();
 
     await generateCover();
     show('bottom-row');
@@ -694,6 +936,23 @@ async function fetchBlog() {
     btn.textContent = 'fetch';
   }
 }
+
+function updateCleanBtn() {
+  const btn = document.getElementById('clean-btn');
+  if (isSkipLLM()) {
+    btn.textContent = 'llm skipped';
+    btn.disabled = true;
+    btn.style.color = 'var(--text-muted)';
+    btn.style.borderColor = 'var(--border)';
+  } else {
+    btn.textContent = 'clean with llm';
+    btn.disabled = false;
+    btn.style.color = 'var(--secondary)';
+    btn.style.borderColor = 'var(--secondary)';
+  }
+}
+
+document.getElementById('skip-llm').addEventListener('change', updateCleanBtn);
 
 async function generateCover() {
   const m = state.metadata;
@@ -726,7 +985,7 @@ async function uploadCover(input) {
 }
 
 async function cleanWithLLM() {
-  if (!state.markdown) return;
+  if (!state.markdown || isSkipLLM()) return;
   const btn = document.getElementById('clean-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="border-top-color:var(--secondary)"></span> cleaning';
@@ -753,7 +1012,10 @@ async function cleanWithLLM() {
   }
 }
 
-async function convertEpub() {
+async function convertEbook() {
+  const formats = getSelectedFormats();
+  if (!formats.length) { toast('select at least one format', true); return; }
+
   const btn = document.getElementById('convert-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
@@ -768,15 +1030,27 @@ async function convertEpub() {
         author: state.metadata.author,
         source: state.metadata.source,
         cover: state.cover,
+        formats: formats,
       })
     });
     const d = await r.json();
     if (d.error) throw new Error(d.error);
 
-    state.epub = d.epub;
-    state.azw3 = d.azw3;
+    state.files = d.files;
 
-    // mark step 2 done, activate step 3
+    // show download links
+    const linksEl = document.getElementById('download-links');
+    linksEl.innerHTML = '';
+    for (const [fmt, url] of Object.entries(d.download_urls)) {
+      const a = document.createElement('a');
+      a.className = 'dl-btn';
+      a.href = url;
+      a.download = d.files[fmt];
+      a.innerHTML = `<span class="dl-icon">&#8595;</span> ${fmt}`;
+      linksEl.appendChild(a);
+    }
+    show('downloads-card');
+
     markStep(2, 'done');
     markStep(3, 'active');
     const connected = await checkKindle();
@@ -784,7 +1058,9 @@ async function convertEpub() {
 
     btn.textContent = 'done';
     btn.disabled = true;
-    toast('epub + azw3 ready');
+
+    const fmtList = formats.join(' + ');
+    toast(fmtList + ' ready');
   } catch (e) {
     toast(e.message, true);
     btn.disabled = false;
@@ -797,11 +1073,14 @@ async function sendToKindle() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
 
+  const kindleFile = state.files.azw3 || state.files.mobi || state.files.epub;
+  if (!kindleFile) { toast('no kindle-compatible file', true); btn.disabled = false; btn.textContent = 'send'; return; }
+
   try {
     const r = await fetch(API + '/api/send-to-kindle', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({file: state.azw3})
+      body: JSON.stringify({file: kindleFile, kindle_path: getKindlePath()})
     });
     const d = await r.json();
     if (d.error) throw new Error(d.error);
@@ -810,7 +1089,7 @@ async function sendToKindle() {
     btn.textContent = 'sent';
 
     document.getElementById('success-text').textContent = 'sent to kindle';
-    document.getElementById('success-detail').textContent = state.azw3;
+    document.getElementById('success-detail').textContent = kindleFile;
     show('success-banner');
 
     toast('on your kindle now');
@@ -825,12 +1104,9 @@ function markStep(n, status) {
   const step = document.getElementById('step-' + n);
   const num = step.querySelector('.step-num');
   const label = step.querySelector('.step-label');
-  const btn = step.querySelector('.btn');
   num.className = 'step-num ' + status;
   label.className = 'step-label ' + status;
-  if (status === 'done') {
-    num.textContent = '✓';
-  }
+  if (status === 'done') num.textContent = '✓';
 }
 
 function resetSteps() {

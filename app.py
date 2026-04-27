@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -11,15 +11,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from fetcher import fetch_blog
 from llm import sanitize_markdown
 from cover import generate_cover, use_uploaded_cover
-from converter import convert_to_epub
-from kindle import get_kindle_status, send_to_kindle, list_kindle_books
+from converter import convert_ebook, VALID_FORMATS
+from kindle import get_kindle_status, send_to_kindle, list_kindle_books, DEFAULT_KINDLE_SUBDIR
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 app = FastAPI(
     title="blog2kindle",
-    version="0.1.0",
-    description="Fetch blog posts, clean them with an LLM, convert to EPUB/AZW3, and send to a USB-connected Kindle.",
+    version="0.2.0",
+    description="Fetch blog posts, clean them with an LLM, convert to ebook formats, and send to a USB-connected Kindle.",
 )
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -47,6 +47,7 @@ class ConvertRequest(BaseModel):
     author: str | None = None
     source: str | None = None
     cover: str | None = None
+    formats: list[str] = ["epub", "azw3"]
 
 
 class SanitizeRequest(BaseModel):
@@ -55,6 +56,7 @@ class SanitizeRequest(BaseModel):
 
 class SendRequest(BaseModel):
     file: str
+    kindle_path: str | None = None
 
 
 class PipelineRequest(BaseModel):
@@ -63,13 +65,22 @@ class PipelineRequest(BaseModel):
     author: str | None = None
     cover: str | None = None
     sanitize: bool = True
+    formats: list[str] = ["epub", "azw3"]
     send_to_kindle: bool = False
+    kindle_path: str | None = None
 
 
 class BatchRequest(BaseModel):
     urls: list[str]
     sanitize: bool = True
+    formats: list[str] = ["epub", "azw3"]
     send_to_kindle: bool = False
+    kindle_path: str | None = None
+
+
+@app.get("/api/formats", tags=["info"], summary="List supported ebook formats")
+def api_formats():
+    return {"formats": sorted(VALID_FORMATS)}
 
 
 @app.post("/api/fetch", tags=["fetch"], summary="Fetch a single blog URL")
@@ -99,36 +110,34 @@ def api_upload_cover(file: UploadFile = File(...)):
     return {"cover": filename, "preview_url": f"/static/covers/{filename}"}
 
 
-@app.post("/api/convert", tags=["convert"], summary="Convert markdown to EPUB + AZW3")
+@app.post("/api/convert", tags=["convert"], summary="Convert markdown to ebook formats")
 def api_convert(req: ConvertRequest):
-    files = convert_to_epub(
+    files = convert_ebook(
         title=req.title,
         markdown_content=req.markdown,
         author=req.author,
         source=req.source,
         cover_filename=req.cover,
+        formats=req.formats,
     )
-    return {
-        "epub": files["epub"],
-        "azw3": files["azw3"],
-        "download_url": f"/static/epubs/{files['epub']}",
-    }
+    download_urls = {fmt: f"/static/epubs/{fname}" for fmt, fname in files.items()}
+    return {"files": files, "download_urls": download_urls}
 
 
 @app.post("/api/send-to-kindle", tags=["kindle"], summary="Send an existing file to Kindle")
 def api_send_to_kindle(req: SendRequest):
-    kindle_path = send_to_kindle(req.file)
-    return {"success": True, "kindle_path": kindle_path}
+    dst = send_to_kindle(req.file, subdir=req.kindle_path)
+    return {"success": True, "kindle_path": dst}
 
 
 @app.get("/api/kindle/status", tags=["kindle"], summary="Check if Kindle is connected")
-def api_kindle_status():
-    return get_kindle_status()
+def api_kindle_status(kindle_path: str | None = Query(None)):
+    return get_kindle_status(subdir=kindle_path)
 
 
 @app.get("/api/kindle/books", tags=["kindle"], summary="List books on the Kindle")
-def api_kindle_books():
-    return {"books": list_kindle_books()}
+def api_kindle_books(kindle_path: str | None = Query(None)):
+    return {"books": list_kindle_books(subdir=kindle_path)}
 
 
 @app.post("/api/pipeline", tags=["pipeline"], summary="Full pipeline for a single URL")
@@ -146,33 +155,37 @@ def api_pipeline(req: PipelineRequest):
     if not cover_file:
         cover_file = generate_cover(title, author=author, source=source, image_url=meta.get("cover_url"))
 
-    files = convert_to_epub(
+    files = convert_ebook(
         title=title,
         markdown_content=markdown,
         author=author,
         source=source,
         cover_filename=cover_file,
+        formats=req.formats,
     )
+
+    download_urls = {fmt: f"/static/epubs/{fname}" for fmt, fname in files.items()}
 
     result = {
         "metadata": meta,
         "markdown_preview": blog["markdown"][:500] + "...",
         "cover": cover_file,
         "cover_url": f"/static/covers/{cover_file}",
-        "epub": files["epub"],
-        "azw3": files["azw3"],
-        "download_url": f"/static/epubs/{files['epub']}",
+        "files": files,
+        "download_urls": download_urls,
     }
 
     if req.send_to_kindle:
-        kindle_path = send_to_kindle(files["azw3"])
-        result["kindle_path"] = kindle_path
+        kindle_file = files.get("azw3") or files.get("mobi") or files.get("epub")
+        if kindle_file:
+            dst = send_to_kindle(kindle_file, subdir=req.kindle_path)
+            result["kindle_path"] = dst
 
     return result
 
 
-def _process_one(url: str, sanitize: bool = True, send_to_kindle: bool = False):
-    """Fetch one blog, optionally sanitize, convert, optionally send to Kindle."""
+def _process_one(url: str, sanitize: bool = True, formats: list[str] | None = None,
+                 do_send: bool = False, kindle_path: str | None = None):
     try:
         blog = fetch_blog(url)
     except Exception as e:
@@ -194,12 +207,13 @@ def _process_one(url: str, sanitize: bool = True, send_to_kindle: bool = False):
         cover_file = None
 
     try:
-        files = convert_to_epub(
+        files = convert_ebook(
             title=title,
             markdown_content=cleaned,
             author=author,
             source=source,
             cover_filename=cover_file,
+            formats=formats,
         )
     except Exception as e:
         return {"url": url, "error": f"convert failed: {e}"}
@@ -207,26 +221,29 @@ def _process_one(url: str, sanitize: bool = True, send_to_kindle: bool = False):
     result = {
         "url": url,
         "title": title,
-        "epub": files["epub"],
-        "azw3": files["azw3"],
+        "files": files,
     }
 
-    if send_to_kindle:
-        try:
-            kindle_path = send_to_kindle(files["azw3"])
-            result["kindle_path"] = kindle_path
-        except Exception as e:
-            result["kindle_error"] = str(e)
+    if do_send:
+        kindle_file = files.get("azw3") or files.get("mobi") or files.get("epub")
+        if kindle_file:
+            try:
+                dst = send_to_kindle(kindle_file, subdir=kindle_path)
+                result["kindle_path"] = dst
+            except Exception as e:
+                result["kindle_error"] = str(e)
 
     return result
 
 
 @app.post("/api/batch", tags=["pipeline"], summary="Full pipeline for multiple URLs in parallel")
 def api_batch(req: BatchRequest):
-    """Process multiple URLs in parallel. Returns per-URL results."""
     results = []
     with ThreadPoolExecutor(max_workers=4) as pool:
-        futures = {pool.submit(_process_one, url, req.sanitize, req.send_to_kindle): url for url in req.urls}
+        futures = {
+            pool.submit(_process_one, url, req.sanitize, req.formats, req.send_to_kindle, req.kindle_path): url
+            for url in req.urls
+        }
         for future in as_completed(futures):
             results.append(future.result())
     return {"results": results}

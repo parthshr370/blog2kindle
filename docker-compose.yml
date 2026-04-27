@@ -1,0 +1,14 @@
+services:
+  blog2kindle:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data/epubs:/app/static/epubs
+      - ./data/covers:/app/static/covers
+      - ./data/images:/app/static/images
+      # uncomment and adjust if your Kindle mounts at a known path:
+      # - /run/media/${USER}/Kindle:/mnt/Kindle:rw
+    restart: unless-stopped
