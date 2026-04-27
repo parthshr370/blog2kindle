@@ -62,11 +62,13 @@ class PipelineRequest(BaseModel):
     title: str | None = None
     author: str | None = None
     cover: str | None = None
+    sanitize: bool = True
     send_to_kindle: bool = False
 
 
 class BatchRequest(BaseModel):
     urls: list[str]
+    sanitize: bool = True
     send_to_kindle: bool = False
 
 
@@ -138,7 +140,7 @@ def api_pipeline(req: PipelineRequest):
     author = req.author or meta.get("author")
     source = meta.get("source")
 
-    markdown = sanitize_markdown(blog["markdown"])
+    markdown = sanitize_markdown(blog["markdown"]) if req.sanitize else blog["markdown"]
 
     cover_file = req.cover
     if not cover_file:
@@ -169,8 +171,8 @@ def api_pipeline(req: PipelineRequest):
     return result
 
 
-def _process_one(url: str, send_to_kindle: bool = False):
-    """Fetch one blog, sanitize, convert, optionally send to Kindle."""
+def _process_one(url: str, sanitize: bool = True, send_to_kindle: bool = False):
+    """Fetch one blog, optionally sanitize, convert, optionally send to Kindle."""
     try:
         blog = fetch_blog(url)
     except Exception as e:
@@ -182,7 +184,7 @@ def _process_one(url: str, send_to_kindle: bool = False):
     source = meta.get("source")
 
     try:
-        cleaned = sanitize_markdown(blog["markdown"])
+        cleaned = sanitize_markdown(blog["markdown"]) if sanitize else blog["markdown"]
     except Exception as e:
         return {"url": url, "error": f"sanitize failed: {e}"}
 
@@ -224,7 +226,7 @@ def api_batch(req: BatchRequest):
     """Process multiple URLs in parallel. Returns per-URL results."""
     results = []
     with ThreadPoolExecutor(max_workers=4) as pool:
-        futures = {pool.submit(_process_one, url, req.send_to_kindle): url for url in req.urls}
+        futures = {pool.submit(_process_one, url, req.sanitize, req.send_to_kindle): url for url in req.urls}
         for future in as_completed(futures):
             results.append(future.result())
     return {"results": results}
